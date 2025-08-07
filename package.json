@@ -1,0 +1,30 @@
+{
+  "name": "@branchdb/client",
+  "version": "1.0.0",
+  "description": "A Client SDK of BranchDB. Providing se\u001b[C\u001b[Cdata manupulation methods.",
+  "keywords": [
+    "key-value",
+    "Database",
+    "Lightweight",
+    "Persistent",
+    "In-memory"
+  ],
+  "homepage": "https://github.com/ChandanKhamitkar/Client-BranchDB#readme",
+  "bugs": {
+    "url": "https://github.com/ChandanKhamitkar/Client-BranchDB/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ChandanKhamitkar/Client-BranchDB.git"
+  },
+  "license": "Apache-2.0",
+  "author": "Chandan Khamitkar",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsc -b && node dist/index.js"
+  },
+  "devDependencies": {
+    "@types/node": "^24.2.0"
+  }
+}
