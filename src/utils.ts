@@ -9,24 +9,26 @@ const PAYLOAD_TYPE = {
 export const deserializeResponse = (data: any): BranchDBResponse => {
   let offset = 0;
 
-  const status_code = data.readUint32LE(offset);
+  const status_code = data.readInt32LE(offset);
   offset += 4;
 
-  const success = data.readInt8(offset);
+  const success = data.readUInt8(offset);
   offset += 1;
 
-  const message_len = data.readUint32LE(offset);
+  const message_len = data.readUInt32LE(offset);
   offset += 4;
 
   const message = data.toString("utf8", offset, offset + message_len);
   offset += message_len;
 
-  const payload_type = data.readInt8(offset);
+  const payload_type = data.readUInt8(offset);
   offset += 1;
 
-  let payload;
+  let payload = null;
 
   if (payload_type === PAYLOAD_TYPE.MONOSTATE) {
+    const payload_len = data.readUInt32LE(offset);
+    offset += 4;
     payload = null;
   } else if (payload_type === PAYLOAD_TYPE.STRING) {
     const payload_len = data.readUint32LE(offset);

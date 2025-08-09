@@ -6,19 +6,25 @@ export class Branch {
   private client: net.Socket;
   private host: string;
   private port: number;
+  private token?: string;
+  private username?: string;
   private isConnected: boolean = false;
   private responseQueue: ((response: BranchDBResponse) => void)[] = [];
   private dataBuffer: Buffer = Buffer.alloc(0);
+  private authenticationPromise: Promise<void> | null = null;
+  private isAuthenticated: boolean = false;
 
   constructor(options: BranchDBClientOptions) {
     this.host = options.host;
     this.port = options.port;
+    this.token = options.token;
+    this.username = options.username;
     this.client = new net.Socket();
   }
 
   public async connect(): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (this.isConnected) {
+      if (this.isConnected && this.isAuthenticated) {
         resolve();
         return;
       }
@@ -26,8 +32,36 @@ export class Branch {
       // Connect
       this.client.connect(this.port, this.host, () => {
         this.isConnected = true;
-        resolve();
-        // this.authenticate();
+
+        if (this.token) {
+          // Case 1: A token is provided. Attempt to authenticate.
+          this.authenticationPromise = this.authenticate()
+            .then(() => {
+              this.isAuthenticated = true;
+              resolve();
+            })
+            .catch((err) => {
+              this.client.destroy();
+              reject(err);
+            });
+        } else if (this.username) {
+          // Case 2: No token, but a username is provided. Register and get a new token.
+          this.authenticationPromise = this.registerAndAuthenticate(
+            this.username
+          )
+            .then(() => {
+              this.isAuthenticated = true;
+              resolve();
+            })
+            .catch((err) => {
+              this.client.destroy();
+              reject(err);
+            });
+        } else {
+          // Case 3: No token or username. Reject.
+          this.client.destroy();
+          reject(new Error("No token or username provided."));
+        }
       });
 
       // Data
@@ -45,8 +79,46 @@ export class Branch {
       // Close
       this.client.on("close", () => {
         this.isConnected = false;
-        console.log("[@branch/client] Connection to server closed.");
+        this.isAuthenticated = false;
+        console.log("[branch-client] Connection to server closed.");
       });
+    });
+  }
+
+  private async authenticate(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const authCommand = `AUTH ${this.token}\n`;
+      const handler = (response: BranchDBResponse) => {
+        if (response.success) {
+          console.log("[SDK] Authentication successful");
+          resolve();
+        } else {
+          reject(new Error(response.message));
+        }
+      };
+
+      this.responseQueue.push(handler);
+      this.client.write(authCommand);
+    });
+  }
+
+  private async registerAndAuthenticate(username: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const registerCommand = `REGISTER ${username}\n`;
+      
+      const handler = (response: BranchDBResponse) => {
+        if (response.success && response.message) {
+          this.token = response.message as string;
+          console.log(
+            `[SDK] New token generated. Please save this token: ${this.token}`
+          );
+          this.authenticate().then(resolve).catch(reject);
+        } else {
+          reject(new Error("Failed to generate token."));
+        }
+      };
+      this.responseQueue.push(handler);
+      this.client.write(registerCommand);
     });
   }
 
@@ -70,21 +142,28 @@ export class Branch {
     value: string,
     ttl: number = 0
   ): Promise<BranchDBResponse> {
-    if (!this.isConnected) {
+    if (this.authenticationPromise) {
+      await this.authenticationPromise;
+    } else {
       throw new Error("Client is not connected. Call connect() first.");
     }
+
     const val = {
       data: value,
     };
-    const command = `SET ${key} ${JSON.stringify(val)}${
-      ttl > 0 ? ` EX ${ttl}` : ""
-    }\n`;
+    let command = `SET ${key} ${JSON.stringify(val)}`;
+    if (ttl > 0) {
+      command += ` EX ${ttl}`;
+    }
+    command += `\n`;
     return this.sendCommand(command);
   }
 
   // GET
   public async get(key: string): Promise<BranchDBResponse> {
-    if (!this.isConnected) {
+    if (this.authenticationPromise) {
+      await this.authenticationPromise;
+    } else {
       throw new Error("Client is not connected. Call connect() first.");
     }
 
@@ -94,7 +173,9 @@ export class Branch {
 
   // GETALL
   public async getall(): Promise<BranchDBResponse> {
-    if (!this.isConnected) {
+    if (this.authenticationPromise) {
+      await this.authenticationPromise;
+    } else {
       throw new Error("Client is not connected. Call connect() first.");
     }
 
@@ -104,7 +185,9 @@ export class Branch {
 
   // DEL
   public async del(key: string): Promise<BranchDBResponse> {
-    if (!this.isConnected) {
+    if (this.authenticationPromise) {
+      await this.authenticationPromise;
+    } else {
       throw new Error("Client is not connected. Call connect() first.");
     }
 
@@ -114,7 +197,9 @@ export class Branch {
 
   // EXISTS
   public async exists(key: string): Promise<BranchDBResponse> {
-    if (!this.isConnected) {
+    if (this.authenticationPromise) {
+      await this.authenticationPromise;
+    } else {
       throw new Error("Client is not connected. Call connect() first.");
     }
 
@@ -124,7 +209,9 @@ export class Branch {
 
   // TTL
   public async ttl(key: string): Promise<BranchDBResponse> {
-    if (!this.isConnected) {
+    if (this.authenticationPromise) {
+      await this.authenticationPromise;
+    } else {
       throw new Error("Client is not connected. Call connect() first.");
     }
 
@@ -134,7 +221,9 @@ export class Branch {
 
   // EXPIRE
   public async expire(key: string): Promise<BranchDBResponse> {
-    if (!this.isConnected) {
+    if (this.authenticationPromise) {
+      await this.authenticationPromise;
+    } else {
       throw new Error("Client is not connected. Call connect() first.");
     }
 
@@ -144,7 +233,9 @@ export class Branch {
 
   // PERSIST
   public async persist(key: string): Promise<BranchDBResponse> {
-    if (!this.isConnected) {
+    if (this.authenticationPromise) {
+      await this.authenticationPromise;
+    } else {
       throw new Error("Client is not connected. Call connect() first.");
     }
 
@@ -153,12 +244,14 @@ export class Branch {
   }
 
   // FLUSH
-  public async flush(key: string): Promise<BranchDBResponse> {
-    if (!this.isConnected) {
+  public async flush(): Promise<BranchDBResponse> {
+    if (this.authenticationPromise) {
+      await this.authenticationPromise;
+    } else {
       throw new Error("Client is not connected. Call connect() first.");
     }
 
-    const command = `FLUSH FORCE ${key}\n`;
+    const command = `FLUSH FORCE\n`;
     return this.sendCommand(command);
   }
 
@@ -170,5 +263,13 @@ export class Branch {
       this.responseQueue.push(handler);
       this.client.write(command);
     });
+  }
+
+  public disconnect(): void {
+    if (this.client) {
+      this.client.destroy();
+      this.isConnected = false;
+      this.isAuthenticated = false;
+    }
   }
 }

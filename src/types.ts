@@ -1,6 +1,8 @@
 export interface BranchDBClientOptions {
   host: string;
   port: number;
+  token?: string;
+  username?: string;
 }
 
 export interface BranchDBResponse {
