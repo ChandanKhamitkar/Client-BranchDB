@@ -8,7 +8,7 @@
 
 ## Introduction 🚀
 
-- `@branchdb/client` is the official Node.js client SDK for Branch DB, a lightweight, in-memory key-value database. This SDK handles all the complexities of network communication and protocol serialization, allowing you to interact with your Branch DB server using a simple, asynchronous Methods.
+- `branchdb-client` is the official Node.js client SDK for Branch DB, a lightweight, in-memory key-value database. This SDK handles all the complexities of network communication and protocol serialization, allowing you to interact with your Branch DB server using a simple, asynchronous Methods.
 
 ## Features ✨
 
@@ -26,7 +26,7 @@
 To install the SDK, run the following command in your project directory:
 
 ```
-npm install @branchdb/client
+npm install branchdb-client
 ```
 
 ---
@@ -42,7 +42,7 @@ npm install @branchdb/client
 ### Example Usage
 
 ```js
-import { Branch } from "@branchdb/client";
+import { Branch } from "branchdb-client";
 
 const config = {
   host: process.env.BRANCH_DB_HOST || "localhost",

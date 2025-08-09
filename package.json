@@ -1,6 +1,6 @@
 {
   "name": "branchdb-client",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A Client SDK of BranchDB. Providing se\u001b[C\u001b[Cdata manupulation methods.",
   "keywords": [
     "key-value",
