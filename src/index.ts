@@ -26,6 +26,7 @@ export class Branch {
       // Connect
       this.client.connect(this.port, this.host, () => {
         this.isConnected = true;
+        resolve();
         // this.authenticate();
       });
 
