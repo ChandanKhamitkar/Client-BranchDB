@@ -1,5 +1,5 @@
 {
-  "name": "@branchdb/client",
+  "name": "branchdb-client",
   "version": "1.0.0",
   "description": "A Client SDK of BranchDB. Providing se\u001b[C\u001b[Cdata manupulation methods.",
   "keywords": [
